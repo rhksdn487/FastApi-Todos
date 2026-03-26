@@ -1,103 +1,248 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>To-Do List v2.0.0</title>
+    <title>To-Do List v3.0.0</title>
     <style>
-        /* 기존 구조를 유지하면서 살짝만 추가한 스타일 */
+        :root {
+            --primary-color: #4CAF50;
+            --bg-color: #f0f2f5;
+            --text-color: #333;
+        }
         body {
-            font-family: sans-serif; /* 기본 폰트를 깔끔하게 변경 */
-            margin: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            padding: 40px 20px;
+            margin: 0;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 550px;
         }
         h1 {
-            color: blue; /* 헤더 글 색상을 파란색으로 변경 */
+            text-align: center;
+            color: var(--primary-color);
+            margin-top: 0;
+            margin-bottom: 25px;
         }
-        li {
-            background-color: #f4f4f4; /* 리스트 배경을 연한 회색으로 */
-            padding: 10px;
-            margin-bottom: 8px;
-            border-left: 4px solid #3498db; /* 왼쪽에 파란색 포인트 줄 추가 */
+        form {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+        input[type="text"] {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
         }
         button {
-            margin-left: 5px;
-            padding: 3px 8px;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 6px;
             cursor: pointer;
-            background-color: #e0e0e0;
-            border: 1px solid #ccc;
+            font-weight: bold;
+            transition: background 0.2s, transform 0.1s;
+        }
+        button:active {
+            transform: scale(0.95);
+        }
+        .btn-add {
+            background-color: var(--primary-color);
+            color: white;
+            white-space: nowrap;
+        }
+        .btn-add:hover { background-color: #45a049; }
+        
+        ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+        li {
+            background: #fff;
+            margin-bottom: 12px;
+            padding: 15px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            border: 1px solid #eee;
+            border-left: 6px solid var(--primary-color);
+            transition: box-shadow 0.2s;
+        }
+        li:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
+        .todo-content {
+            flex: 1;
+            margin: 0 15px;
+        }
+        .todo-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        .todo-desc {
+            font-size: 13px;
+            color: #777;
+        }
+        /* 완료된 항목 스타일 */
+        .completed {
+            border-left-color: #bbb;
+            opacity: 0.7;
+        }
+        .completed .todo-title, .completed .todo-desc {
+            text-decoration: line-through;
+            color: #aaa;
+        }
+        .actions button {
+            padding: 6px 12px;
+            font-size: 12px;
+            margin-left: 5px;
+        }
+        .btn-edit { background-color: #ffc107; color: #000; }
+        .btn-edit:hover { background-color: #e0a800; }
+        .btn-delete { background-color: #f44336; color: white; }
+        .btn-delete:hover { background-color: #da190b; }
+        
+        input[type="checkbox"] {
+            transform: scale(1.4);
+            cursor: pointer;
+            accent-color: var(--primary-color);
         }
     </style>
 </head>
 <body>
-    <h1>To-Do List v2.0.0</h1>
-    <ul id="todo-list"></ul>
-    <form id="todo-form">
-        <input type="text" id="title" placeholder="Title" required>
-        <input type="text" id="description" placeholder="Description" required>
-        <button type="submit">Add To-Do</button>
-    </form>
+    <div class="container">
+        <h1>To-Do List v3.0.0</h1>
+        <form id="todo-form">
+            <input type="text" id="title" placeholder="할 일 제목 (예: 장보기)" required>
+            <input type="text" id="description" placeholder="상세 설명 (예: 우유, 계란 사기)" required>
+            <button type="submit" class="btn-add">추가하기</button>
+        </form>
+        <ul id="todo-list"></ul>
+    </div>
+
     <script>
+        // 서버에서 할 일 목록 불러오기
         async function fetchTodos() {
             const response = await fetch('/todos');
             const todos = await response.json();
             const todoList = document.getElementById('todo-list');
             todoList.innerHTML = '';
+            
             todos.forEach(todo => {
                 const li = document.createElement('li');
-                li.textContent = `${todo.title}: ${todo.description} (Completed: ${todo.completed})`;
+                if (todo.completed) {
+                    li.classList.add('completed');
+                }
+
+                // 체크박스 (완료 상태 토글용)
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = todo.completed;
+                checkbox.onchange = () => toggleComplete(todo);
+
+                // 할 일 텍스트 컨텐츠
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'todo-content';
+                contentDiv.innerHTML = `<div class="todo-title">${todo.title}</div><div class="todo-desc">${todo.description}</div>`;
+
+                // 버튼 컨테이너
+                const actionsDiv = document.createElement('div');
+                actionsDiv.className = 'actions';
+
                 const editButton = document.createElement('button');
-                editButton.textContent = 'Edit';
-                editButton.onclick = () => editTodo(todo.id);
+                editButton.textContent = '수정';
+                editButton.className = 'btn-edit';
+                editButton.onclick = () => editTodo(todo);
+
                 const deleteButton = document.createElement('button');
-                deleteButton.textContent = 'Delete';
+                deleteButton.textContent = '삭제';
+                deleteButton.className = 'btn-delete';
                 deleteButton.onclick = () => deleteTodo(todo.id);
-                li.appendChild(editButton);
-                li.appendChild(deleteButton);
+
+                actionsDiv.appendChild(editButton);
+                actionsDiv.appendChild(deleteButton);
+
+                li.appendChild(checkbox);
+                li.appendChild(contentDiv);
+                li.appendChild(actionsDiv);
                 todoList.appendChild(li);
             });
         }
 
-        async function editTodo(id) {
-            const title = prompt('Enter new title:');
-            const description = prompt('Enter new description:');
-            const completed = confirm('Is this task completed?');
-            const response = await fetch(`/todos/${id}`, {
+        // 체크박스 클릭 시 완료 상태만 변경하여 서버에 전송
+        async function toggleComplete(todo) {
+            const response = await fetch(`/todos/${todo.id}`, {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ id, title, description, completed })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...todo, completed: !todo.completed })
             });
-            if (response.ok) {
-                fetchTodos();
-            }
+            if (response.ok) fetchTodos();
         }
 
+        // 할 일 수정 (기존 데이터가 프롬프트에 기본으로 입력됨)
+        async function editTodo(todo) {
+            const newTitle = prompt('수정할 제목을 입력하세요:', todo.title);
+            if (newTitle === null) return; // 취소 누르면 종료
+            
+            const newDesc = prompt('수정할 설명을 입력하세요:', todo.description);
+            if (newDesc === null) return;
+
+            const response = await fetch(`/todos/${todo.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...todo, title: newTitle, description: newDesc })
+            });
+            if (response.ok) fetchTodos();
+        }
+
+        // 할 일 삭제 (삭제 전 확인 창 추가)
         async function deleteTodo(id) {
+            if (!confirm('정말 이 할 일을 삭제하시겠습니까?')) return;
+            
             const response = await fetch(`/todos/${id}`, {
                 method: 'DELETE'
             });
-            if (response.ok) {
-                fetchTodos();
-            }
+            if (response.ok) fetchTodos();
         }
 
+        // 새 할 일 폼 제출 시 이벤트
         document.getElementById('todo-form').addEventListener('submit', async (event) => {
             event.preventDefault();
-            const title = document.getElementById('title').value;
-            const description = document.getElementById('description').value;
+            const titleInput = document.getElementById('title');
+            const descInput = document.getElementById('description');
+
             const response = await fetch('/todos', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ id: Date.now(), title, description, completed: false })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    id: Date.now(), 
+                    title: titleInput.value, 
+                    description: descInput.value, 
+                    completed: false 
+                })
             });
+
             if (response.ok) {
+                // 입력창 초기화 후 다시 불러오기
+                titleInput.value = '';
+                descInput.value = '';
                 fetchTodos();
             }
         });
 
+        // 초기 실행 시 목록 불러오기
         fetchTodos();
     </script>
 </body>
