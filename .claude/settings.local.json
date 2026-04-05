@@ -3,7 +3,8 @@
     "allow": [
       "Bash(pip show:*)",
       "Bash(python -m pytest test_main.py -v)",
-      "Bash(python -m pytest tests/test_main.py -v)"
+      "Bash(python -m pytest tests/test_main.py -v)",
+      "Bash(python -m pytest tests/test_integration.py -v)"
     ]
   }
 }
